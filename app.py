@@ -35,16 +35,23 @@ orchestrator = VoicePipelineOrchestrator()
 # Mount static files
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
-STATIC_DIR.mkdir(exist_ok=True)
-(STATIC_DIR / "css").mkdir(exist_ok=True)
-(STATIC_DIR / "js").mkdir(exist_ok=True)
+try:
+    STATIC_DIR.mkdir(exist_ok=True)
+    (STATIC_DIR / "css").mkdir(exist_ok=True)
+    (STATIC_DIR / "js").mkdir(exist_ok=True)
+except Exception:
+    pass
 
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 from core.database import DatabaseManager
 
 # Initialize SQLite database on startup
-DatabaseManager.init_db()
+try:
+    DatabaseManager.init_db()
+except Exception as e:
+    logger.warning(f"Database init warning: {e}")
 
 @app.get("/")
 async def get_index():

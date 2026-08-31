@@ -7,7 +7,10 @@ from typing import List, Dict, Any, Optional
 from core.models import EmergencyIncident, DispatchedUnit
 
 logger = logging.getLogger("AegisVoice.Database")
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "aegis_incidents.db")
+if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+    DB_PATH = "/tmp/aegis_incidents.db"
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "aegis_incidents.db")
 
 class DatabaseManager:
     """
