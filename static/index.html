@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AegisVoice Pro - Advanced 911 CAD Voice Copilot & Triage Command Center</title>
+    <meta name="description" content="Autonomous Real-Time Emergency Voice Triage, Clinical Intelligence, and Fleet Dispatch Command Center powered by AssemblyAI Universal-Streaming and Multi-Agent Orchestration.">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        tactical: {
+                            950: '#04060a',
+                            900: '#070a11',
+                            850: '#0b101c',
+                            800: '#0f172a',
+                            750: '#152238',
+                            700: '#1c2b48',
+                            border: 'rgba(38, 57, 92, 0.6)',
+                            'border-light': 'rgba(56, 189, 248, 0.25)',
+                            cyan: '#06b6d4',
+                            red: '#ef4444',
+                            amber: '#f59e0b',
+                            green: '#10b981',
+                            blue: '#3b82f6',
+                            purple: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'Consolas', 'monospace'],
+                        sans: ['"Plus Jakarta Sans"', '"Inter"', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Leaflet CSS & JS for Tactical GIS Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-tactical-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-white">
+
+    <!-- Top Header / Tactical Telemetry Bar -->
+    <header class="bg-tactical-900/95 backdrop-blur-md border-b border-tactical-border px-4 lg:px-6 py-2.5 flex items-center justify-between sticky top-0 z-50 shadow-lg shadow-black/40">
+        <!-- Brand / Identity -->
+        <div class="flex items-center space-x-3.5">
+            <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-600/30 to-red-950/80 border border-red-500/50 shadow-lg shadow-red-950/60 beacon-pulse text-red-400">
+                <i data-lucide="shield-alert" class="w-5 h-5 animate-pulse"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-base font-extrabold tracking-wide text-white uppercase flex items-center gap-2">
+                        AegisVoice Pro
+                        <span class="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 tracking-wider">
+                            911 CAD & MPDS COPILOT
+                        </span>
+                    </h1>
+                </div>
+                <p class="text-[11px] text-slate-400 font-medium">Autonomous Real-Time Voice Triage, Clinical Intelligence & Fleet Dispatch</p>
+            </div>
+        </div>
+
+        <!-- System Pipeline & Latency Telemetry HUD -->
+        <div class="hidden xl:flex items-center space-x-2.5 text-xs font-mono">
+            <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-tactical-800 border border-tactical-border/80 shadow-sm" id="hud-conn-status">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-emerald-400 font-bold">ONLINE</span>
+            </div>
+            <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-tactical-800 border border-tactical-border/80 shadow-sm">
+                <span class="text-slate-400 font-normal">STT:</span>
+                <span class="text-cyan-400 font-semibold" id="badge-stt">AssemblyAI Universal-Streaming</span>
+            </div>
+            <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-tactical-800 border border-tactical-border/80 shadow-sm">
+                <span class="text-slate-400 font-normal">LLM:</span>
+                <span class="text-amber-400 font-semibold" id="badge-llm">Groq Llama-3.3-70B</span>
+            </div>
+            <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-tactical-800 border border-tactical-border/80 shadow-sm">
+                <span class="text-slate-400 font-normal">LATENCY:</span>
+                <span class="text-emerald-400 font-semibold" id="hud-latency">~280ms TTFT</span>
+            </div>
+        </div>
+
+        <!-- Incident Actions & Session Control -->
+        <div class="flex items-center space-x-2">
+            <!-- Call Duration Stopwatch -->
+            <div class="hidden sm:flex flex-col items-end px-2.5 py-1 rounded-lg bg-tactical-800 border border-tactical-border/80">
+                <span class="text-[9px] text-slate-400 uppercase tracking-widest font-mono">Session Timer</span>
+                <span class="text-xs font-bold font-mono text-cyan-300" id="header-stopwatch">00:00</span>
+            </div>
+
+            <!-- Incident ID -->
+            <div class="text-right px-2.5 py-1 rounded-lg bg-tactical-800 border border-tactical-border/80">
+                <span class="text-[9px] text-slate-400 uppercase tracking-widest font-mono">CAD Incident ID</span>
+                <div class="text-xs font-extrabold font-mono text-cyan-400" id="header-incident-id">INC-INIT</div>
+            </div>
+
+            <!-- Theme Toggle Button -->
+            <button id="btn-theme-toggle" title="Toggle Light / Dark Theme" class="theme-toggle-btn shadow-sm">
+                <i data-lucide="sun" id="icon-theme" class="w-3.5 h-3.5 text-amber-500"></i>
+                <span id="label-theme">LIGHT</span>
+            </button>
+
+            <!-- Header Action Buttons -->
+            <button id="btn-api-status" title="API Keys & System Readiness" class="px-2.5 py-1.5 text-xs font-semibold bg-tactical-800 hover:bg-tactical-750 text-slate-300 hover:text-white border border-tactical-border rounded-lg flex items-center gap-1.5 transition-all shadow-sm">
+                <i data-lucide="key" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span id="api-status-btn-label" class="hidden sm:inline">API Status</span>
+                <span id="api-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            </button>
+            <button id="btn-help-shortcuts" title="Keyboard Shortcuts" class="p-2 text-slate-400 hover:text-cyan-300 bg-tactical-800 hover:bg-tactical-750 border border-tactical-border rounded-lg transition-all">
+                <i data-lucide="keyboard" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-reset-incident" title="Reset Incident" class="px-2.5 py-1.5 text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700/80 flex items-center gap-1.5 transition-all shadow-sm">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-amber-400"></i> <span class="hidden md:inline">Reset</span>
+            </button>
+            <button id="btn-export-fhir" class="px-2.5 py-1.5 text-xs font-semibold bg-purple-950/70 hover:bg-purple-900/80 text-purple-200 border border-purple-500/50 rounded-lg flex items-center gap-1.5 transition-all shadow-sm">
+                <i data-lucide="database" class="w-3.5 h-3.5 text-purple-400"></i> <span class="hidden md:inline">HL7 FHIR</span>
+            </button>
+            <button id="btn-export-report" class="px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg shadow-md shadow-cyan-950/50 flex items-center gap-1.5 transition-all">
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">CAD Report</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout Grid -->
+    <main class="flex-1 p-3 lg:p-4 grid grid-cols-1 lg:grid-cols-12 gap-3.5 max-w-[1920px] w-full mx-auto transition-all duration-500">
+
+        <!-- ======================================================================= -->
+        <!-- LEFT COLUMN: Voice Control, Audio Visualizer, Vitals & MPDS (Span 3) -->
+        <!-- ======================================================================= -->
+        <div class="lg:col-span-3 flex flex-col gap-3.5">
+            
+            <!-- Voice Call Console Card -->
+            <div class="tactical-card rounded-2xl p-4 flex flex-col relative overflow-hidden">
+                <!-- Header with status and duration -->
+                <div class="flex items-center justify-between pb-3 border-b border-tactical-border">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1 rounded bg-cyan-500/10 border border-cyan-500/30">
+                            <i data-lucide="radio" class="w-4 h-4 text-cyan-400 animate-pulse"></i>
+                        </div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-200">Live Voice Console</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span id="call-duration-badge" class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-tactical-900 text-slate-400 border border-tactical-border">00:00</span>
+                        <span id="call-status-badge" class="px-2 py-0.5 text-[11px] font-mono rounded bg-slate-800 text-slate-400 border border-slate-700">IDLE</span>
+                    </div>
+                </div>
+
+                <!-- Visualizer Controls & Waveform Canvas -->
+                <div class="my-3 flex flex-col gap-1.5">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                        <span class="flex items-center gap-1"><i data-lucide="activity" class="w-3.5 h-3.5 text-cyan-400"></i> Audio Spectrum</span>
+                        <button id="btn-visualizer-mode" class="px-2 py-0.5 rounded bg-tactical-900 hover:bg-tactical-700 border border-tactical-border text-slate-300 text-[10px] flex items-center gap-1 transition-all">
+                            <i data-lucide="activity" class="w-3 h-3 text-cyan-400"></i> Equalizer
+                        </button>
+                    </div>
+
+                    <div class="relative h-28 bg-tactical-950 rounded-xl border border-tactical-border flex items-center justify-center overflow-hidden shadow-inner">
+                        <canvas id="waveform-canvas" class="w-full h-full"></canvas>
+                        <div id="mic-hint-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-tactical-950/85 backdrop-blur-sm text-center p-3">
+                            <div class="p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-400 mb-1.5">
+                                <i data-lucide="mic-off" class="w-5 h-5 text-slate-400"></i>
+                            </div>
+                            <span class="text-xs text-slate-300 font-medium">Microphone Standby</span>
+                            <span class="text-[10px] text-slate-500 font-mono mt-0.5">Click "Initiate 911 Call" or press Alt+C</span>
+                        </div>
+                    </div>
+
+                    <!-- Hardware VU Meter -->
+                    <div class="flex items-center gap-2 mt-1 px-1">
+                        <span class="text-[9px] font-mono text-slate-500 uppercase">Input VU</span>
+                        <div class="flex-1 bg-tactical-950 rounded-full h-2 overflow-hidden border border-tactical-border">
+                            <div id="vu-meter-fill" class="h-full bg-cyan-400 rounded-full transition-all duration-75" style="width: 0%;"></div>
+                        </div>
+                        <span id="vu-meter-text" class="text-[9px] font-mono text-slate-400 w-10 text-right">0% VU</span>
+                    </div>
+                </div>
+
+                <!-- Call Action Buttons & Mute -->
+                <div class="flex gap-2 mt-1">
+                    <button id="btn-call-toggle" class="flex-1 py-2.5 px-3 rounded-xl font-bold text-xs bg-gradient-to-r from-red-600 via-red-500 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-xl shadow-red-950/80 flex items-center justify-center gap-2 transition-all transform active:scale-95 border border-red-400/30">
+                        <i data-lucide="phone-call" class="w-4 h-4 animate-bounce"></i>
+                        <span>INITIATE 911 CALL</span>
+                    </button>
+                    <button id="btn-mute-toggle" disabled title="Mute Microphone (M)" class="px-3.5 py-2.5 rounded-xl bg-tactical-900 hover:bg-tactical-700 disabled:opacity-30 text-slate-300 border border-tactical-border transition-all">
+                        <i data-lucide="mic" class="w-4 h-4 text-cyan-400"></i>
+                    </button>
+                </div>
+
+                <!-- Volume & Output Controls -->
+                <div class="mt-3 pt-2.5 border-t border-tactical-border/70 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2 text-slate-400 text-[11px]">
+                        <i data-lucide="volume-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        <span>Dispatcher Audio:</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="1" class="w-20 accent-cyan-400 cursor-pointer h-1.5 bg-tactical-950 rounded-lg">
+                        <span id="volume-label" class="text-[10px] font-mono text-slate-300 w-7 text-right">100%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CPR Metronome Widget (Cardio-Pulmonary Resuscitation Pacer) -->
+            <div id="cpr-metronome-card" class="tactical-card rounded-2xl p-3.5 flex flex-col relative border-red-500/40 bg-gradient-to-br from-red-950/40 via-tactical-900 to-tactical-850 shadow-lg">
+                <div class="flex items-center justify-between pb-2 border-b border-red-500/30">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="heart-pulse" class="w-4 h-4 text-red-400 animate-pulse"></i>
+                        <span class="text-xs uppercase font-bold tracking-wider text-red-300">CPR Compression Metronome</span>
+                    </div>
+                    <button id="btn-cpr-toggle" class="px-2 py-0.5 text-xs font-semibold rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 transition-all">
+                        <i data-lucide="heart" class="w-3 h-3 text-red-400"></i> CPR Metronome
+                    </button>
+                </div>
+                <div class="flex items-center justify-between mt-2.5 px-2">
+                    <div class="flex items-center gap-3">
+                        <div id="cpr-heart-pulse" class="w-9 h-9 rounded-full bg-red-600/30 border border-red-500 flex items-center justify-center text-red-400">
+                            <i data-lucide="heart" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-200">Acoustic & Visual Beat</div>
+                            <div id="cpr-status-text" class="text-[10px] font-mono text-slate-400">PACE: 110 BPM (Target: 100-120 BPM)</div>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-mono text-red-400 bg-red-950/80 px-2 py-0.5 rounded border border-red-500/40">AHA GUIDELINE</span>
+                </div>
+            </div>
+
+            <!-- Triage Severity Matrix & Clinical Vitals Card -->
+            <div class="tactical-card rounded-2xl p-4 shadow-xl">
+                <div class="flex items-center justify-between pb-2.5 border-b border-tactical-border">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1 rounded bg-red-500/10 border border-red-500/30">
+                            <i data-lucide="activity" class="w-4 h-4 text-red-400"></i>
+                        </div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-200">MPDS Triage Matrix</span>
+                    </div>
+                    <span id="triage-badge" class="px-2.5 py-0.5 text-xs font-mono font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">P3 - ALPHA STANDARD</span>
+                </div>
+
+                <!-- Priority Levels Grid -->
+                <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-mono">
+                    <div id="card-triage-green" class="p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-400 transition-all opacity-40">
+                        <div class="font-bold text-xs">P3 - GREEN</div>
+                        <div class="text-[9px] text-slate-400 mt-0.5">Alpha / Standard</div>
+                    </div>
+                    <div id="card-triage-amber" class="p-2.5 rounded-xl border border-amber-500/40 bg-amber-950/20 text-amber-400 transition-all opacity-40">
+                        <div class="font-bold text-xs">P2 - AMBER</div>
+                        <div class="text-[9px] text-slate-400 mt-0.5">Delta / Urgent</div>
+                    </div>
+                    <div id="card-triage-red" class="p-2.5 rounded-xl border border-red-500/40 bg-red-950/20 text-red-400 transition-all opacity-40">
+                        <div class="font-bold text-xs">P1 - RED</div>
+                        <div class="text-[9px] text-slate-400 mt-0.5">Echo / Life Threat</div>
+                    </div>
+                </div>
+
+                <!-- Patient Diagnostic Fields & GCS -->
+                <div class="mt-3.5 space-y-2 text-xs">
+                    <div class="flex justify-between items-center bg-tactical-950/80 p-2.5 rounded-xl border border-tactical-border/70">
+                        <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-cyan-400"></i> Location:</span>
+                        <span id="field-location" class="font-bold text-cyan-300 font-mono truncate max-w-[170px]" title="Click to center map">Detecting...</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-tactical-950/80 p-2.5 rounded-xl border border-tactical-border/70">
+                        <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="brain" class="w-3.5 h-3.5 text-amber-400"></i> AVPU / GCS:</span>
+                        <span id="field-consciousness" class="font-semibold text-slate-200 font-mono">Alert (GCS 15)</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-tactical-950/80 p-2.5 rounded-xl border border-tactical-border/70">
+                        <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="wind" class="w-3.5 h-3.5 text-blue-400"></i> Respiration:</span>
+                        <span id="field-breathing" class="font-semibold text-slate-200">Normal</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-tactical-950/80 p-2.5 rounded-xl border border-tactical-border/70">
+                        <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="droplet" class="w-3.5 h-3.5 text-red-400"></i> Hemorrhage:</span>
+                        <span id="field-bleeding" class="font-semibold text-slate-200">None</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Demo Emergency Scenarios -->
+            <div class="tactical-card rounded-2xl p-3.5">
+                <div class="flex items-center gap-1.5 text-xs uppercase font-bold tracking-wider text-slate-300 mb-2.5">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> High-Stress Scenario Simulators
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <button class="btn-scenario text-left px-3 py-2 text-xs bg-tactical-900/80 hover:bg-tactical-700/80 rounded-xl border border-tactical-border text-slate-200 hover:text-white transition-all flex items-center justify-between shadow-sm group" data-text="Help! My father collapsed at 420 Market Street, he is completely unconscious and not breathing!">
+                        <span class="font-medium group-hover:text-red-300 flex items-center gap-1.5">🚨 Cardiac Arrest / CPR</span>
+                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-red-950 border border-red-500/40 text-red-300 font-mono">09-E-01 ECHO</span>
+                    </button>
+                    <button class="btn-scenario text-left px-3 py-2 text-xs bg-tactical-900/80 hover:bg-tactical-700/80 rounded-xl border border-tactical-border text-slate-200 hover:text-white transition-all flex items-center justify-between shadow-sm group" data-text="Severe multi-car crash on 5th and Broadway, driver trapped with arterial bleed!">
+                        <span class="font-medium group-hover:text-amber-300 flex items-center gap-1.5">🚗 Multi-Car Crash & Bleed</span>
+                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-red-950 border border-red-500/40 text-red-300 font-mono">29-D-01 DELTA</span>
+                    </button>
+                    <button class="btn-scenario text-left px-3 py-2 text-xs bg-tactical-900/80 hover:bg-tactical-700/80 rounded-xl border border-tactical-border text-slate-200 hover:text-white transition-all flex items-center justify-between shadow-sm group" data-text="Industrial natural gas leak with hissing pipes at 88 Pine Street warehouse!">
+                        <span class="font-medium group-hover:text-amber-300 flex items-center gap-1.5">⚠️ Hazmat Gas Explosion</span>
+                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-950 border border-amber-500/40 text-amber-300 font-mono">08-D-01 DELTA</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ======================================================================= -->
+        <!-- CENTER COLUMN: Real-time Transcript & AI Interaction Feed (Span 5) -->
+        <!-- ======================================================================= -->
+        <div class="lg:col-span-5 flex flex-col tactical-card rounded-2xl overflow-hidden min-h-[640px] shadow-2xl">
+            
+            <!-- Transcript Header -->
+            <div class="px-4 py-3 bg-tactical-900/90 border-b border-tactical-border flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-1 rounded bg-cyan-500/10 border border-cyan-500/30">
+                        <i data-lucide="message-square" class="w-4 h-4 text-cyan-400"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-200">Live Voice Transcription Feed</span>
+                        <div class="text-[10px] text-slate-400 font-mono" id="badge-incident-type">Emergency Triage Stream</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <span class="text-[11px] font-mono text-cyan-300 font-semibold" id="stt-live-indicator">Universal-Streaming Active</span>
+                </div>
+            </div>
+
+            <!-- Messages Stream Container -->
+            <div id="transcript-feed" class="flex-1 p-4 overflow-y-auto space-y-3.5 font-sans text-xs">
+                <!-- Welcome system message -->
+                <div class="text-center my-2">
+                    <span class="text-[11px] font-mono text-slate-400 bg-tactical-950 px-4 py-1.5 rounded-full border border-tactical-border shadow-sm">
+                        CAD Session Initiated • AssemblyAI Universal-Streaming Active
+                    </span>
+                </div>
+            </div>
+
+            <!-- Live Partial Transcript Bar -->
+            <div id="partial-transcript-bar" class="hidden px-4 py-2.5 bg-tactical-950/95 border-t border-cyan-500/40 text-xs font-mono text-cyan-300 flex items-center gap-2.5 backdrop-blur">
+                <i data-lucide="mic" class="w-3.5 h-3.5 animate-pulse text-cyan-400"></i>
+                <span class="text-slate-400">Transcribing:</span>
+                <span id="partial-text" class="italic text-cyan-200 font-semibold">...</span>
+            </div>
+
+            <!-- Quick Dispatch Prompt Suggestions -->
+            <div class="px-3 py-2 bg-tactical-900/60 border-t border-tactical-border/70 flex items-center gap-1.5 overflow-x-auto text-[11px] font-mono text-slate-400">
+                <span class="text-[10px] uppercase font-bold text-slate-500 whitespace-nowrap">Quick Prompts:</span>
+                <button class="btn-canned-prompt px-2 py-0.5 rounded bg-tactical-950 hover:bg-tactical-750 border border-tactical-border text-cyan-300 whitespace-nowrap transition-all" data-prompt="What is your exact location and address?">
+                    📍 Location?
+                </button>
+                <button class="btn-canned-prompt px-2 py-0.5 rounded bg-tactical-950 hover:bg-tactical-750 border border-tactical-border text-red-300 whitespace-nowrap transition-all" data-prompt="Is the patient breathing or conscious?">
+                    🫁 Breathing?
+                </button>
+                <button class="btn-canned-prompt px-2 py-0.5 rounded bg-tactical-950 hover:bg-tactical-750 border border-tactical-border text-amber-300 whitespace-nowrap transition-all" data-prompt="Begin chest compressions in the center of the chest now.">
+                    🚨 Start CPR
+                </button>
+                <button class="btn-canned-prompt px-2 py-0.5 rounded bg-tactical-950 hover:bg-tactical-750 border border-tactical-border text-emerald-300 whitespace-nowrap transition-all" data-prompt="Help is dispatched and en route to your location.">
+                    🚑 Units En Route
+                </button>
+            </div>
+
+            <!-- Speech / Text Simulator Input Box -->
+            <div class="p-3 bg-tactical-950/90 border-t border-tactical-border flex items-center gap-2">
+                <input id="input-text-prompt" type="text" placeholder="Type emergency caller message or speak into microphone..." class="flex-1 bg-tactical-900 border border-tactical-border rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-sans shadow-inner">
+                <button id="btn-send-text" title="Send (Enter)" class="p-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-xl transition-all shadow-md shadow-cyan-950/60 flex items-center justify-center">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ======================================================================= -->
+        <!-- RIGHT COLUMN: Interactive GIS Map, Active Fleet & Tool Telemetry (Span 4) -->
+        <!-- ======================================================================= -->
+        <div class="lg:col-span-4 flex flex-col gap-3.5">
+            
+            <!-- Interactive Tactical GIS Map -->
+            <div class="tactical-card rounded-2xl p-3.5 shadow-xl flex flex-col">
+                <div class="flex items-center justify-between pb-2 border-b border-tactical-border mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1 rounded bg-emerald-500/10 border border-emerald-500/30">
+                            <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i>
+                        </div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-200">Live GPS Fleet Tracker</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <!-- Layer Switcher -->
+                        <div class="flex bg-tactical-950 p-0.5 rounded-lg border border-tactical-border text-[9px] font-mono">
+                            <button id="btn-layer-dark" class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">DARK</button>
+                            <button id="btn-layer-sat" class="px-1.5 py-0.5 rounded text-slate-400 hover:text-slate-200">SAT</button>
+                            <button id="btn-layer-street" class="px-1.5 py-0.5 rounded text-slate-400 hover:text-slate-200">STREET</button>
+                        </div>
+                        <button id="btn-toggle-radar" title="Toggle Tactical Radar" class="px-1.5 py-0.5 text-[9px] font-mono rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            RADAR
+                        </button>
+                        <button id="btn-recenter-map" title="Recenter on Incident" class="p-1 rounded bg-tactical-900 hover:bg-tactical-700 border border-tactical-border text-slate-300 transition-all">
+                            <i data-lucide="crosshair" class="w-3 h-3 text-cyan-400"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Map Container with Speed Banner -->
+                <div class="relative rounded-xl border border-tactical-border overflow-hidden shadow-inner h-56">
+                    <div id="tactical-map" class="w-full h-full z-10"></div>
+                    <div class="radar-sweep"></div>
+                    
+                    <!-- Fleet Drive Simulation Floating Bar -->
+                    <div class="absolute bottom-2 left-2 z-20 flex items-center gap-1.5 bg-tactical-950/90 backdrop-blur-md px-2 py-1 rounded-lg border border-cyan-500/30 shadow-lg text-[9px] font-mono">
+                        <span class="text-cyan-400 font-bold flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3 text-emerald-400 animate-pulse"></i> SIM SPEED:</span>
+                        <button id="btn-sim-1x" class="px-1.5 py-0.5 rounded bg-cyan-500/30 text-cyan-300 font-bold border border-cyan-500/40">1x</button>
+                        <button id="btn-sim-5x" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white">5x ⚡</button>
+                        <button id="btn-sim-15x" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white">15x 🚀</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nearby Safe Havens & Public Landmarks Card -->
+            <div class="tactical-card rounded-2xl p-3.5 shadow-xl flex flex-col">
+                <div class="flex items-center justify-between pb-2.5 border-b border-tactical-border">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1 rounded bg-indigo-500/10 border border-indigo-500/30">
+                            <i data-lucide="building" class="w-4 h-4 text-indigo-400"></i>
+                        </div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-200">Nearby Safe Havens & Landmarks</span>
+                    </div>
+                    <span id="safe-havens-count-badge" class="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">GEO-VERIFIED</span>
+                </div>
+
+                <div id="safe-havens-list" class="mt-2.5 space-y-2 max-h-36 overflow-y-auto pr-1 text-xs">
+                    <div class="p-2 rounded-xl bg-tactical-950/80 border border-tactical-border flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">
+                                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-200 text-xs">Walgreens 24/7 (Public AED)</div>
+                                <div class="text-[10px] text-slate-400">498 Market St • 120m away (1 min walk)</div>
+                            </div>
+                        </div>
+                        <span class="px-1.5 py-0.5 text-[9px] font-mono rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">AED READY</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Dispatched Units Card -->
+            <div class="tactical-card rounded-2xl p-4 shadow-xl flex flex-col">
+                <div class="flex items-center justify-between pb-2.5 border-b border-tactical-border">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1 rounded bg-cyan-500/10 border border-cyan-500/30">
+                            <i data-lucide="truck" class="w-4 h-4 text-cyan-400"></i>
+                        </div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-200">Active Dispatched Fleet</span>
+                    </div>
+                    <span id="dispatched-count-badge" class="px-2.5 py-0.5 text-xs font-mono font-bold rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">0 UNITS</span>
+                </div>
+
+                <div id="dispatched-units-list" class="mt-3 space-y-2 max-h-36 overflow-y-auto pr-1 text-xs">
+                    <div class="text-center py-5 text-slate-500 font-mono text-xs">
+                        <i data-lucide="radio" class="w-6 h-6 mx-auto mb-1.5 opacity-30 text-slate-400"></i>
+                        No units dispatched yet. Awaiting AI triage recommendations.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool Execution Telemetry Terminal -->
+            <div class="tactical-card rounded-2xl p-3.5 shadow-xl flex-1 flex flex-col">
+                <div class="flex items-center justify-between pb-2 border-b border-tactical-border mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1 rounded bg-amber-500/10 border border-amber-500/30">
+                            <i data-lucide="terminal" class="w-4 h-4 text-amber-400"></i>
+                        </div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-200">Tool Execution Telemetry</span>
+                    </div>
+                    <span class="text-[10px] font-mono text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/30 font-bold">JSON-SCHEMA</span>
+                </div>
+
+                <div id="tool-logs-container" class="flex-1 bg-tactical-950 p-3 rounded-xl border border-tactical-border overflow-y-auto max-h-36 font-mono text-[10px] space-y-2 text-slate-300 shadow-inner">
+                    <div class="text-slate-500 italic p-1">[Waiting for autonomous tool triggers...]</div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Modal: Incident Report & FHIR Viewer -->
+    <div id="modal-export" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="tactical-card rounded-2xl max-w-3xl w-full p-5 shadow-2xl flex flex-col max-h-[85vh] border-cyan-500/40">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-tactical-border">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="file-check" class="w-5 h-5 text-cyan-400"></i>
+                    <h3 id="modal-title" class="text-sm font-bold text-white uppercase tracking-wider">CAD Incident Case File</h3>
+                </div>
+                <button id="btn-close-modal" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="flex items-center gap-2 mt-3 pb-2 border-b border-tactical-border/70 font-mono">
+                <button id="tab-export-md" class="px-3 py-1 text-xs font-semibold rounded bg-cyan-600 text-white shadow">
+                    CAD Markdown
+                </button>
+                <button id="tab-export-fhir" class="px-3 py-1 text-xs font-semibold rounded text-slate-400 hover:text-white transition-all">
+                    HL7 FHIR (R4)
+                </button>
+                <button id="tab-export-raw" class="px-3 py-1 text-xs font-semibold rounded text-slate-400 hover:text-white transition-all">
+                    Raw JSON
+                </button>
+            </div>
+
+            <!-- Preformatted content -->
+            <div class="my-3 flex-1 overflow-y-auto">
+                <pre id="export-content-pre" class="p-3.5 bg-tactical-950 rounded-xl text-xs font-mono text-slate-200 border border-tactical-border overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-inner"></pre>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end gap-2.5 pt-3 border-t border-tactical-border">
+                <button id="btn-download-export" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-xl text-white flex items-center gap-1.5 border border-slate-600 transition-all">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Download File
+                </button>
+                <button id="btn-copy-clipboard" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-xs font-semibold rounded-xl text-white flex items-center gap-1.5 shadow-md shadow-cyan-950/60 transition-all">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Keyboard Shortcuts Help -->
+    <div id="modal-shortcuts" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="tactical-card rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col border-cyan-500/40">
+            <div class="flex items-center justify-between pb-3 border-b border-tactical-border">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="keyboard" class="w-5 h-5 text-cyan-400"></i>
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">Tactical Keyboard Shortcuts</h3>
+                </div>
+                <button id="btn-close-shortcuts" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="my-4 space-y-2.5 font-mono text-xs">
+                <div class="flex justify-between items-center p-2 rounded-lg bg-tactical-950 border border-tactical-border">
+                    <span class="text-slate-300">Initiate / Terminate Call</span>
+                    <kbd class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-cyan-400 font-bold">Alt + C</kbd>
+                </div>
+                <div class="flex justify-between items-center p-2 rounded-lg bg-tactical-950 border border-tactical-border">
+                    <span class="text-slate-300">Mute / Unmute Microphone</span>
+                    <kbd class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-cyan-400 font-bold">M</kbd>
+                </div>
+                <div class="flex justify-between items-center p-2 rounded-lg bg-tactical-950 border border-tactical-border">
+                    <span class="text-slate-300">Toggle CPR Metronome</span>
+                    <kbd class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-cyan-400 font-bold">P</kbd>
+                </div>
+                <div class="flex justify-between items-center p-2 rounded-lg bg-tactical-950 border border-tactical-border">
+                    <span class="text-slate-300">Close Active Modal</span>
+                    <kbd class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-cyan-400 font-bold">Esc</kbd>
+                </div>
+            </div>
+
+    <!-- Modal: API Keys & System Readiness Status -->
+    <div id="modal-api-status" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="tactical-card rounded-2xl max-w-lg w-full p-5 shadow-2xl flex flex-col border-cyan-500/40">
+            <div class="flex items-center justify-between pb-3 border-b border-tactical-border">
+                <div class="flex items-center gap-2">
+                    <div class="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/40 text-cyan-400">
+                        <i data-lucide="key" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">System Readiness & API Keys</h3>
+                        <p class="text-[10px] text-slate-400">Live configuration & diagnostic status</p>
+                    </div>
+                </div>
+                <button id="btn-close-api-status" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="my-4 space-y-3 font-sans text-xs">
+                <!-- AssemblyAI Status Card -->
+                <div id="card-status-assemblyai" class="p-3 rounded-xl bg-tactical-950 border border-tactical-border flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="p-2 rounded-lg bg-tactical-850 text-cyan-400 border border-tactical-border">
+                            <i data-lucide="mic" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-100 flex items-center gap-1.5">
+                                AssemblyAI Real-Time STT
+                            </div>
+                            <div class="text-[10px] text-slate-400">Universal-Streaming WebSocket Engine</div>
+                        </div>
+                    </div>
+                    <span id="badge-status-assemblyai" class="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        CONNECTED
+                    </span>
+                </div>
+
+                <!-- LLM Provider Status Card -->
+                <div id="card-status-llm" class="p-3 rounded-xl bg-tactical-950 border border-tactical-border flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="p-2 rounded-lg bg-tactical-850 text-amber-400 border border-tactical-border">
+                            <i data-lucide="brain" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-100 flex items-center gap-1.5" id="label-status-llm">
+                                Groq Reasoning Engine
+                            </div>
+                            <div class="text-[10px] text-slate-400">Clinical Triage & JSON Tool Calling</div>
+                        </div>
+                    </div>
+                    <span id="badge-status-llm" class="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        ACTIVE
+                    </span>
+                </div>
+
+                <!-- TTS Voice Status Card -->
+                <div class="p-3 rounded-xl bg-tactical-950 border border-tactical-border flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="p-2 rounded-lg bg-tactical-850 text-indigo-400 border border-tactical-border">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-100 flex items-center gap-1.5">
+                                Streaming Voice Output (Edge-TTS)
+                            </div>
+                            <div class="text-[10px] text-slate-400">Zero-Latency Audio Synthesis (100% Free)</div>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        READY
+                    </span>
+                </div>
+
+                <!-- Missing Key Notice Box (Conditional) -->
+                <div id="box-api-alert" class="hidden p-3 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-[11px] leading-relaxed">
+                    <div class="font-bold flex items-center gap-1.5 text-amber-400 mb-1">
+                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Action Required: API Key Missing
+                    </div>
+                    <p id="msg-api-alert">Please ensure your <code>ASSEMBLYAI_API_KEY</code> and <code>GROQ_API_KEY</code> are set in your <code>.env</code> file.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2.5 border-t border-tactical-border">
+                <span class="text-[10px] text-slate-500 font-mono">Port: 8080 • Mode: Production</span>
+                <button onclick="document.getElementById('modal-api-status').classList.add('hidden')" class="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-xs font-semibold rounded-xl text-white shadow-md shadow-cyan-950/50">
+                    Got it
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/visualizer.js"></script>
+    <script src="/static/js/telemetry.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script>
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

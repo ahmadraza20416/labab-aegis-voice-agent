@@ -1,0 +1,298 @@
+/* ==========================================================================
+   AegisVoice Pro - Enterprise CAD Command Center Design System
+   Designed with agency-ui-designer & agency-ux-architect token architecture.
+   WCAG AA Compliant • Responsive Grid • Light & Dark Dual Theming System
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root, [data-theme="light"] {
+    /* Base Foundations - Light Theme */
+    --bg-page: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-surface-subtle: #f1f5f9;
+    --bg-surface-elevated: #ffffff;
+    --bg-terminal: #f8fafc;
+
+    /* Text & Typography */
+    --text-primary: #0f172a;       /* Slate 900 - High Contrast (14.2:1 ratio) */
+    --text-secondary: #334155;     /* Slate 700 - Subtitles & Fields */
+    --text-muted: #64748b;         /* Slate 500 - Timestamp & Muted */
+    --text-inverse: #ffffff;
+
+    /* Borders & Dividers */
+    --border-primary: #e2e8f0;     /* Slate 200 */
+    --border-subtle: #cbd5e1;      /* Slate 300 */
+    --border-accent: rgba(6, 182, 212, 0.4);
+
+    /* Tactical Semantic Colors (WCAG AA Certified) */
+    --accent-cyan: #0284c7;        /* Sky 600 */
+    --accent-cyan-bg: rgba(2, 132, 199, 0.1);
+    --accent-red: #dc2626;         /* Red 600 */
+    --accent-red-bg: rgba(220, 38, 38, 0.1);
+    --accent-amber: #d97706;       /* Amber 600 */
+    --accent-amber-bg: rgba(217, 119, 6, 0.1);
+    --accent-emerald: #059669;     /* Emerald 600 */
+    --accent-emerald-bg: rgba(5, 150, 105, 0.1);
+    --accent-indigo: #4f46e5;      /* Indigo 600 */
+    --accent-indigo-bg: rgba(79, 70, 229, 0.1);
+
+    /* Shadows & Elevation */
+    --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+    --shadow-card-hover: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+    --shadow-glow-red: 0 0 25px rgba(220, 38, 38, 0.25);
+    --shadow-glow-amber: 0 0 25px rgba(217, 119, 6, 0.25);
+    --shadow-glow-green: 0 0 25px rgba(5, 150, 105, 0.25);
+
+    /* Map Tile Filter (Light mode clean street tiles) */
+    --map-tile-filter: none;
+}
+
+[data-theme="dark"] {
+    /* Base Foundations - Dark Theme */
+    --bg-page: #04060a;
+    --bg-surface: rgba(15, 23, 42, 0.85);
+    --bg-surface-subtle: rgba(11, 16, 28, 0.95);
+    --bg-surface-elevated: #0f172a;
+    --bg-terminal: #070a11;
+
+    /* Text & Typography */
+    --text-primary: #f1f5f9;       /* Slate 100 */
+    --text-secondary: #cbd5e1;     /* Slate 300 */
+    --text-muted: #64748b;         /* Slate 500 */
+    --text-inverse: #0f172a;
+
+    /* Borders & Dividers */
+    --border-primary: rgba(38, 57, 92, 0.6);
+    --border-subtle: rgba(56, 189, 248, 0.2);
+    --border-accent: rgba(6, 182, 212, 0.4);
+
+    /* Tactical Semantic Colors */
+    --accent-cyan: #06b6d4;
+    --accent-cyan-bg: rgba(6, 182, 212, 0.15);
+    --accent-red: #ef4444;
+    --accent-red-bg: rgba(239, 68, 68, 0.18);
+    --accent-amber: #f59e0b;
+    --accent-amber-bg: rgba(245, 158, 11, 0.18);
+    --accent-emerald: #10b981;
+    --accent-emerald-bg: rgba(16, 185, 129, 0.15);
+    --accent-indigo: #818cf8;
+    --accent-indigo-bg: rgba(129, 140, 248, 0.15);
+
+    /* Shadows & Elevation */
+    --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --shadow-card-hover: 0 12px 30px -4px rgba(0, 0, 0, 0.7), 0 0 15px rgba(6, 182, 212, 0.05);
+    --shadow-glow-red: 0 0 40px -10px rgba(239, 68, 68, 0.35);
+    --shadow-glow-amber: 0 0 35px -10px rgba(245, 158, 11, 0.3);
+    --shadow-glow-green: 0 0 30px -10px rgba(16, 185, 129, 0.25);
+
+    /* Map Tile Filter (Tactical night vision) */
+    --map-tile-filter: brightness(0.65) invert(1) contrast(3) hue-rotate(200deg) saturate(0.25) brightness(0.75);
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    min-height: 100vh;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', Consolas, monospace !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-cyan);
+}
+
+/* Pro Tactical Card System */
+.tactical-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.tactical-card:hover {
+    box-shadow: var(--shadow-card-hover);
+}
+
+/* Emergency Ambient Glows */
+.emergency-glow-red {
+    box-shadow: var(--shadow-glow-red) !important;
+    border-color: var(--accent-red) !important;
+}
+.emergency-glow-amber {
+    box-shadow: var(--shadow-glow-amber) !important;
+    border-color: var(--accent-amber) !important;
+}
+.emergency-glow-green {
+    box-shadow: var(--shadow-glow-green) !important;
+    border-color: var(--accent-emerald) !important;
+}
+
+/* Speech Bubbles */
+.msg-agent {
+    border-left: 3px solid var(--accent-cyan);
+    background: var(--accent-cyan-bg);
+    color: var(--text-primary);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-card);
+}
+
+.msg-caller {
+    border-left: 3px solid var(--accent-red);
+    background: var(--accent-red-bg);
+    color: var(--text-primary);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-card);
+}
+
+/* Interactive Entity Chips */
+.entity-chip-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent-cyan-bg);
+    color: var(--accent-cyan);
+    border: 1px solid var(--border-accent);
+    padding: 1px 7px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.entity-chip-location:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px var(--accent-cyan-bg);
+}
+
+.entity-chip-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent-red-bg);
+    color: var(--accent-red);
+    border: 1px solid var(--accent-red);
+    padding: 1px 7px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    font-weight: 700;
+}
+
+.entity-chip-protocol {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent-indigo-bg);
+    color: var(--accent-indigo);
+    border: 1px solid var(--accent-indigo);
+    padding: 1px 7px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+/* Triage Matrix Active States */
+.triage-active-red {
+    opacity: 1 !important;
+    box-shadow: 0 0 16px var(--accent-red-bg);
+    border-color: var(--accent-red) !important;
+    background: var(--accent-red-bg) !important;
+}
+
+.triage-active-amber {
+    opacity: 1 !important;
+    box-shadow: 0 0 16px var(--accent-amber-bg);
+    border-color: var(--accent-amber) !important;
+    background: var(--accent-amber-bg) !important;
+}
+
+.triage-active-green {
+    opacity: 1 !important;
+    box-shadow: 0 0 16px var(--accent-emerald-bg);
+    border-color: var(--accent-emerald) !important;
+    background: var(--accent-emerald-bg) !important;
+}
+
+/* Tactical Map & Leaflet Tile Container */
+#tactical-map {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 220px !important;
+    position: relative !important;
+    z-index: 1 !important;
+    background-color: var(--bg-surface-subtle) !important;
+}
+
+.leaflet-tile-pane {
+    filter: var(--map-tile-filter);
+    transition: filter 0.3s ease;
+}
+
+.leaflet-container {
+    background-color: var(--bg-surface-subtle) !important;
+}
+
+/* Radar Sweep Map Layer */
+.radar-sweep {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 320px;
+    height: 320px;
+    margin-top: -160px;
+    margin-left: -160px;
+    border-radius: 50%;
+    border: 1px solid rgba(5, 150, 105, 0.25);
+    box-shadow: 0 0 25px rgba(5, 150, 105, 0.15);
+    animation: radar-spin 4s linear infinite;
+    background: conic-gradient(from 0deg, rgba(5, 150, 105, 0.25) 0deg, transparent 60deg, transparent 360deg);
+    pointer-events: none !important;
+    z-index: 400 !important;
+}
+
+@keyframes radar-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Theme Toggle Button Component */
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.theme-toggle-btn:hover {
+    background: var(--bg-surface-subtle);
+    color: var(--text-primary);
+    border-color: var(--accent-cyan);
+}
